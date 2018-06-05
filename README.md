@@ -11,10 +11,15 @@ https://github.com/stanfordnmbl/osim-rl
 ## Environment set up
 
 Use conda to create a virtual environment:
+
 `conda create -n opensim-rl -c kidzik opensim`
+
 `conda install -c conda-forge lapack git`
+
 `pip install git+https://github.com/stanfordnmbl/osim-rl.git`
 
 Reinforcement Learning packages perhaps needed
+
 `conda install keras -c conda-forge`
+
 `pip install git+https://github.com/matthiasplappert/keras-rl.git`

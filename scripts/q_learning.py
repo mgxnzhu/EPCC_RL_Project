@@ -59,6 +59,7 @@ for i in range(episode):
     # Initialize a new simulation
     state = np.array(env.reset())
     reward = 0
+    print("Episode ",i)
 
     # Run the simulation until the framework stop it
     done = False

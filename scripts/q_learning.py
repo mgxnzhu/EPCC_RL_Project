@@ -81,7 +81,7 @@ for i in range(episode):
 
         # Obtain {s, a} and [r + gamma * max_a` Q(s`, a`)]
         action_func = lambda x: -qf(state_, x)
-        bnds = Bounds(-1,1)
+        bnds = Bounds(action_low, action_high)
         res = minimize(action_func, action0, method='SLSQP', bounds=bnds)
         max_q = -res.fun
         yy = np.array(reward + discount * max_q)

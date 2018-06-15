@@ -57,7 +57,7 @@ ydata = np.zeros((1,))
 action0 = np.zeros(dim_act)
 for i in range(episode):
     # Initialize a new simulation
-    state = env.reset()
+    state = np.array(env.reset())
     reward = 0
 
     # Run the simulation until the framework stop it
@@ -76,6 +76,7 @@ for i in range(episode):
 
         # evolve the system to the next time stamp
         state_, reward, done, info = env.step(action)
+        state_ = np.array(state_)
 
         # Obtain {s, a} and [r + gamma * max_a` Q(s`, a`)]
         action_func = lambda x: -qf(state_, x)
@@ -89,7 +90,7 @@ for i in range(episode):
 
         # Do linear regression
         model.fit(xdata, ydata)
-        qf.updata(model.coef_)
+        qf.update(model.coef_.T)
 
         # Update state
         state = state_

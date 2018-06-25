@@ -3,6 +3,12 @@ import numpy as np
 from scipy.optimize import minimize, Bounds
 from sklearn.linear_model import LinearRegression
 
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+
+import sys
+
 DEFAULT_SEED = 20180101
 rng = np.random.RandomState(DEFAULT_SEED)
 
@@ -16,7 +22,7 @@ action_low = -1
 action_high = 1
 
 # Set hyperparameters
-discount = 0.01
+discount = 0.001
 epsilon = 0.1
 episode = 2000
 
@@ -50,6 +56,9 @@ model = LinearRegression(fit_intercept=False)
 # Initialize the dataset
 xdata = np.zeros((qf.dim,))
 ydata = np.zeros((1,))
+
+# FIXME: logging
+coeff_list = []
 
 action0 = np.zeros(dim_act)
 for i in range(episode):
@@ -90,6 +99,19 @@ for i in range(episode):
         # Do linear regression and update Q function
         model.fit(xdata, ydata)
         qf.update(model.coef_.T)
+        
+        # FIXME: logging 
+        coeff2 = np.sum(np.square(model.coef_.T))
+        coeff_list.append(coeff2)
+        if coeff2 == float('inf'):
+            fig = plt.figure(figsize=(8,6))
+            ax = fig.add_subplot(111)
+            ax.semilogy(range(len(coeff_list)),coeff_list)
+            ax.set_ylim(1e-10, 1e300)
+            ax.set_ylabel("$\sum{a_i^2}$")
+            ax.set_xlabel("step")
+            fig.savefig("coeff.pdf")
+            sys.exit()
 
         # Update state
         state = state_

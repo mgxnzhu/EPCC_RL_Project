@@ -15,12 +15,22 @@ action_low = env.action_space.low
 action_high = env.action_space.high # bounds of action space by env
 bnds = Bounds(action_low, action_high)
 
-model = np.genfromtxt("model_ql.csv", delimiter=',')
+model = np.genfromtxt("model_qq.csv", delimiter=',')
 coef_ = model[:-1]
 intercept_ = model[-1]
 
+def quadartic(vec):
+    # convert (x1, x2, x3, ...) to (x1^2, x1x2, x1x3, ..., x2^2, x2x3, ...)
+    if not isinstance(vec, np.ndarray):
+        vec = np.array(vec)
+    res = []
+    for i, x in enumerate(vec):
+        res = np.concatenate((res, x*vec[i:]))
+    return res
+
 def qfunc(obs, act):
-    X = np.concatenate((obs, act))
+    input_vec = np.concatenate((obs, act))
+    X = quadartic(input_vec)
     res = np.sum(X * coef_) + np.asscalar(intercept_)
     return res
 

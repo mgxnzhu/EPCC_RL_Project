@@ -18,9 +18,9 @@ bnds = Bounds(action_low, action_high)
 
 # Set hyperparameters
 discount = 1e-1
-learning_rate = 1e-3
-#epsilon = 1
-episode = 200
+learning_rate = 1e-2
+epsilon = 0.9
+episode = 1000
 batch_size = 10
 
 
@@ -39,22 +39,19 @@ class qfunction:
         self.dim = dim_obs + dim_act
         # Only take one step when fitting
         self.model = SGDRegressor(penalty='none', learning_rate='constant', eta0=learning_rate, random_state=rng, max_iter=1)
-        xdata = rng.rand(batch_size, self.dim)
-        ydata = rng.rand(batch_size, )
-        self.model.partial_fit(xdata, ydata)
+        self.model.coef_ = rng.rand(self.dim)
+        self.model.intercept_ = rng.rand(1,)
         print("Model Initialized!")
-        # Since SGDRegressor does not provide a method to feed the coefficients, which is needed in the beginning to calculate Q function value, used random dataset to fit the model to generate a set of coefficients 
         
     def __call__(self, obs, act):
         # input states and action, return value of q function
         X = np.concatenate((obs, act))
-        res = np.sum(X * qf.model.coef_) + np.asscalar(qf.model.intercept_)
-        #res = self.model.predict(X)
+        res = np.sum(X * self.model.coef_) + np.asscalar(self.model.intercept_)
         return res
         
     def get_maxq(self, state_):
         # get maximum of Q(s', a') under given s'
-        action_func = lambda x: -qf(state_, x)
+        action_func = lambda x: -self(state_, x)
         action0 = 0.5 * np.ones(self.dim_act) # the center of action space
         res = minimize(action_func, action0, method='SLSQP', bounds=bnds)
         # note: https://en.wikipedia.org/wiki/Sequential_quadratic_programming
@@ -68,7 +65,10 @@ qf = qfunction(dim_obs, dim_act)
 xdata = np.zeros((batch_size, qf.dim))
 ydata = np.zeros((batch_size, ))
 
+
+action0 = 0.5 * np.ones(dim_act) # the center of action space
 for i in range(episode):
+    print("episode %d" % (i))
     # Initialize a new simulation
     state = np.array(env.reset())
     reward = 0
@@ -76,7 +76,7 @@ for i in range(episode):
     done = False
     j = 0 # index of data in batch
     while not done:
-        '''
+        
         # get the action based on Q function and epsilon greedy
         if (rng.rand() < epsilon) :
             # exploration: randomly choose an action
@@ -84,12 +84,12 @@ for i in range(episode):
         else:
             # exploitation: choose the action maximumizing Q function
             action_func = lambda x: -qf(state, x)
-            bnds = Bounds(action_low, action_high)
             res = minimize(action_func, action0, method='SLSQP', bounds=bnds)
             action = res.x
         '''
         # randomly choose an action
         action = rng.uniform(action_low, action_high, dim_act)
+        '''
 
         # evolve the system to the next time step
         state_, reward, done, info = env.step(action)
@@ -116,4 +116,4 @@ for i in range(episode):
         j = j + 1
         
 model_coeff = np.hstack((qf.model.coef_, qf.model.intercept_))
-np.savetxt("model.csv", model_coeff, delimiter=",")
+np.savetxt("model_ql.csv", model_coeff, delimiter=",")

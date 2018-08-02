@@ -7,7 +7,6 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-
 DEFAULT_SEED = 20180101
 rng = np.random.RandomState(DEFAULT_SEED)
 
@@ -47,7 +46,7 @@ reward_list = []
 i_act = []
 i_reward = []
 
-model_name = "Q_learning-gamma%3.2f-epsilon%3.2f" % (discount, epsilon)
+model_name = "SARSA-gamma%3.2f-epsilon%3.2f" % (discount, epsilon)
 
 class qfunction:
     # A class to store the coefficents of linear function
@@ -72,6 +71,7 @@ class qfunction:
         # input states and action, return value of q function
         X = np.concatenate((obs, act))
         res = np.sum(X * self.model.coef_) + np.asscalar(self.model.intercept_)
+        #res = self.model.predict(X)
         return res
         
     def get_maxq(self, state_):
@@ -82,7 +82,7 @@ class qfunction:
         # note: https://en.wikipedia.org/wiki/Sequential_quadratic_programming
         max_q = -res.fun # max Q(s', a')
         return max_q
-        
+    
 # Initialize Q function
 qf = qfunction(dim_obs, dim_act)
 
@@ -90,7 +90,7 @@ qf = qfunction(dim_obs, dim_act)
 xdata = np.zeros((batch_size, qf.dim))
 ydata = np.zeros((batch_size, ))
 
-action0 = 0.5 * np.ones(dim_act) # the center of action space, the start point for optimization calculation
+action0 = 0.5 * np.ones(qf.dim_act)
 for i in range(n_episode):
     # Initialize a new simulation
     state = np.array(env.reset())
@@ -102,6 +102,7 @@ for i in range(n_episode):
     j = 0 # index of data in batch
     while not done:
         
+        # choose action a by state s
         # get the action based on Q function and epsilon greedy
         if (rng.rand() < epsilon) :
             # exploration: randomly choose an action
@@ -116,22 +117,32 @@ for i in range(n_episode):
         action = rng.uniform(action_low, action_high, dim_act)
         '''
 
+        # take action a, observe r, s′
         # evolve the system to the next time step
         state_, reward, done, info = env.step(action)
         state_ = np.array(state_)
-
+        
         sum_reward = sum_reward + reward * gamma_n
         gamma_n = gamma_n * discount
         
         ave_action = np.average(action)
         i_act.append(ave_action)
         i_reward.append(reward)
-
-        max_q = qf.get_maxq(state_)
         
-        # {s, a} and [r + gamma * max_a` Q(s`, a`)]
+        # choose action a' by state s'
+        # get the action based on Q function and epsilon greedy
+        if (rng.rand() < epsilon) :
+            # exploration: randomly choose an action
+            action_ = rng.uniform(action_low, action_high, dim_act)
+        else:
+            # exploitation: choose the action maximumizing Q function
+            action_func = lambda x: -qf(state_, x)
+            res = minimize(action_func, action0, method='SLSQP', bounds=bnds)
+            action_ = res.x
+        
+        # {s, a} and [r + gamma * Q(s`, a`)]
         xx = np.concatenate((state, action))
-        yy = np.array(reward + discount * max_q)
+        yy = np.array(reward + discount * qf(state_, action_))
         
         # put the data point into data batch
         xdata[j] = xx
@@ -146,9 +157,9 @@ for i in range(n_episode):
         # Update state
         state = state_
         j = j + 1
-
     print("episode %d, sum_reward %f" % (i, sum_reward))
     reward_list.append(sum_reward)
+
         
 model_coeff = np.hstack((qf.model.coef_, qf.model.intercept_))
 np.savetxt(model_name+".csv", model_coeff, delimiter=",")

@@ -1,3 +1,6 @@
 *.log
 *.csv
+*.npy
+*.npz
+*.pdf
 notebooks/.ipynb_checkpoints/*

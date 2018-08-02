@@ -1,6 +1,7 @@
 from osim.env import L2RunEnv
 import numpy as np
 from scipy.optimize import minimize, Bounds
+import sys
 
 DEFAULT_SEED = 20180101
 rng = np.random.RandomState(DEFAULT_SEED)
@@ -15,7 +16,8 @@ action_low = env.action_space.low
 action_high = env.action_space.high # bounds of action space by env
 bnds = Bounds(action_low, action_high)
 
-model = np.genfromtxt("model_ql.csv", delimiter=',')
+filename = sys.argv[1]
+model = np.genfromtxt(filename, delimiter=',')
 coef_ = model[:-1]
 intercept_ = model[-1]
 
